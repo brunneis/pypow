@@ -7,6 +7,7 @@ import time
 from catenae import Link, Electron, rpc, should_stop
 from threading import Lock
 from os import environ
+import time
 
 
 class BlockchainUtils:
@@ -22,7 +23,7 @@ class BlockchainUtils:
     def get_rate(number: int, start_timestamp: int):
         elapsed_seconds = BlockchainUtils.get_timestamp() - start_timestamp
         if elapsed_seconds == 0:
-            return 0
+            return number
         return number / elapsed_seconds
 
 
@@ -50,8 +51,8 @@ class Block:
 
 class Blockchain(Link):
 
-    ZEROS_HASH = 64 * '0' # 0x0000000000000000000000000000000000000000000000000000000000000000
-    target = 5 * '0' + 59 * 'f' # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    ZEROS_HASH = 64 * '0'  # 0x0000000000000000000000000000000000000000000000000000000000000000
+    target = 6 * '0' + 58 * 'f'  # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
     def setup(self):
         self.known_blocks = dict()
@@ -64,10 +65,11 @@ class Blockchain(Link):
         self.launch_thread(self.mine, safe_stop=True)
         self.loop(self.write_output, interval=3)
 
-    def find_block(self, prev_hash: str, data: str, mining_preview: bool = False):
+    def find_block(self, prev_hash: str, data: str, mining_preview: bool = True):
         block = Block(BlockchainUtils.get_timestamp(), environ['MINER_NAME'], prev_hash)
-        hashes_no = 0
         start_timestamp = BlockchainUtils.get_timestamp()
+        hashrate = 0
+        hashes_no = 0
         while block.hash > Blockchain.target:
             if should_stop():
                 return
@@ -75,8 +77,8 @@ class Blockchain(Link):
             block.set_nonce()
             hashes_no += 1
             hashrate = BlockchainUtils.get_rate(hashes_no, start_timestamp)
-            if mining_preview:
-                self.logger.log(f'{block.hash} ({int(hashrate / 1000)} Kh/s)')
+            if mining_preview and hashes_no % 5000 == 0:
+                self.logger.log(f'{int(hashrate / 1000)} Kilohashes / second')
         return block
 
     def process_blocks(self):
@@ -118,16 +120,16 @@ class Blockchain(Link):
             return
         block = self.winning_block
 
-        with open('chain_ascii.txt', 'w') as chain_ascii:
+        with open('winning_chain.txt', 'w') as output_file:
             while block.prev_hash != Blockchain.ZEROS_HASH or block.prev_hash == Blockchain.ZEROS_HASH:
-                chain_ascii.write(83 * '-' + '\n')
-                chain_ascii.write(f'| hash:       | {block.hash}\n')
-                chain_ascii.write(f'| height:     | {block.height}\n')
-                chain_ascii.write(f'| timestamp:  | {block.timestamp}\n')
-                chain_ascii.write(f'| author:     | {block.author}\n')
-                chain_ascii.write(f'| prev_hash:  | {block.prev_hash}\n')
-                chain_ascii.write(f'| data:       | {block.data}\n')
-                chain_ascii.write(83 * '-' + '\n')
+                output_file.write(83 * '-' + '\n')
+                output_file.write(f'| hash:       | {block.hash}\n')
+                output_file.write(f'| height:     | {block.height}\n')
+                output_file.write(f'| timestamp:  | {block.timestamp} ({time.ctime(block.timestamp)})\n')
+                output_file.write(f'| author:     | {block.author}\n')
+                output_file.write(f'| prev_hash:  | {block.prev_hash}\n')
+                output_file.write(f'| data:       | {block.data}\n')
+                output_file.write(83 * '-' + '\n')
 
                 if block.prev_hash != Blockchain.ZEROS_HASH:
                     block = self.known_blocks[block.prev_hash]
@@ -145,14 +147,12 @@ class Blockchain(Link):
             if not block:
                 return
 
-            self.send_block(block)
-            self.rpc_notify('send_block', block)
-
             blocks_no += 1
             blockrate = BlockchainUtils.get_rate(blocks_no, start_timestamp)
+            self.logger.log(f'Valid block {block.hash} found! {int(blockrate * 3600)} blocks / hour\n')
 
-            self.logger.log(f'Block found! {int(blockrate * 60)} blocks/m')
-            time.sleep(3)
+            self.send_block(block)
+            self.rpc_notify('send_block', block)
 
     def get_prev_hash(self):
         if self.winning_block:
