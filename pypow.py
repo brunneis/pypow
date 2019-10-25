@@ -9,6 +9,13 @@ from threading import Lock
 from os import environ
 import time
 
+from urllib import request
+
+
+def get_current_iss_location():
+    url = 'http://api.open-notify.org/iss-now'
+    return request.urlopen(url).read().decode('utf-8')
+
 
 class BlockchainUtils:
     @staticmethod
@@ -28,8 +35,7 @@ class BlockchainUtils:
 
 
 class Block:
-    def __init__(self, timestamp: int, author: str, prev_hash: str, data: str = '', version: str = "chain1"):
-        self.version = version
+    def __init__(self, timestamp: int, author: str, prev_hash: str, data: str):
         self.timestamp = timestamp
         self.author = author
         self.prev_hash = prev_hash
@@ -42,17 +48,17 @@ class Block:
         self.hash = Block.get_hash(self)
 
     @staticmethod
-    def get_hash(block):
+    def get_hash(block: Block):
         data_hash = BlockchainUtils.sha3_256(block.data)
         block_hash = BlockchainUtils.sha3_256(
-            f'{block.version}{block.timestamp}{block.author}{block.prev_hash}{data_hash}{block.nonce}')
+            f'{block.timestamp}{block.author}{block.prev_hash}{data_hash}{block.nonce}')
         return block_hash
 
 
 class Blockchain(Link):
 
     ZEROS_HASH = 64 * '0'  # 0x0000000000000000000000000000000000000000000000000000000000000000
-    target = 6 * '0' + 58 * 'f'  # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    target = 6 * '0' + 58 * 'f'  # 0x000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
     def setup(self):
         self.known_blocks = dict()
@@ -66,7 +72,7 @@ class Blockchain(Link):
         self.loop(self.write_output, interval=3)
 
     def find_block(self, prev_hash: str, data: str, mining_preview: bool = True):
-        block = Block(BlockchainUtils.get_timestamp(), environ['MINER_NAME'], prev_hash)
+        block = Block(BlockchainUtils.get_timestamp(), environ['MINER_NAME'], prev_hash, data)
         start_timestamp = BlockchainUtils.get_timestamp()
         hashrate = 0
         hashes_no = 0
@@ -106,7 +112,7 @@ class Blockchain(Link):
             self.winning_block = block
 
     @rpc
-    def send_block(self, block, context=None):
+    def send_block(self, block: Block, context=None):
         block.hash = Block.get_hash(block)
         if block.hash > Blockchain.target:
             self.logger.log(f'❌ Rejected block {block.hash} from {block.author}', level='warn')
@@ -143,7 +149,7 @@ class Blockchain(Link):
         while not should_stop():
             prev_hash = self.get_prev_hash()
 
-            block = self.find_block(prev_hash, "")
+            block = self.find_block(prev_hash, '')
             if not block:
                 return
 
