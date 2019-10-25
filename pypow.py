@@ -48,7 +48,7 @@ class Block:
         self.hash = Block.get_hash(self)
 
     @staticmethod
-    def get_hash(block: Block):
+    def get_hash(block):
         data_hash = BlockchainUtils.sha3_256(block.data)
         block_hash = BlockchainUtils.sha3_256(
             f'{block.timestamp}{block.author}{block.prev_hash}{data_hash}{block.nonce}')
@@ -112,7 +112,7 @@ class Blockchain(Link):
             self.winning_block = block
 
     @rpc
-    def send_block(self, block: Block, context=None):
+    def send_block(self, block, context=None):
         block.hash = Block.get_hash(block)
         if block.hash > Blockchain.target:
             self.logger.log(f'❌ Rejected block {block.hash} from {block.author}', level='warn')
