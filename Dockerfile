@@ -1,3 +1,3 @@
-FROM catenae/link:2.0.0
+FROM catenae/link:develop
 ADD pypow.py /opt/catenae
 ENTRYPOINT ["python", "pypow.py"]
