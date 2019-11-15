@@ -58,7 +58,7 @@ class Block:
 class Blockchain(Link):
 
     ZEROS_HASH = 64 * '0'  # 0x0000000000000000000000000000000000000000000000000000000000000000
-    target = 6 * '0' + 58 * 'f'  # 0x000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    target = 6 * '0' + 58 * 'f'  # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
     def setup(self):
         self.known_blocks = dict()
@@ -149,7 +149,7 @@ class Blockchain(Link):
         while not should_stop():
             prev_hash = self.get_prev_hash()
 
-            block = self.find_block(prev_hash, '')
+            block = self.find_block(prev_hash, get_current_iss_location())
             if not block:
                 return
 
