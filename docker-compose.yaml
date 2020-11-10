@@ -1,0 +1,36 @@
+
+version: "3.5"
+
+x-logging: &default-logging
+  options:
+    max-size: "10m"
+    max-file: "5"
+  driver: json-file
+
+networks:
+  stopover:
+    name: stopover
+
+services:
+  # stopover:
+  #   container_name: pypow-stopover
+  #   image: labteral/stopover-server
+  #   volumes:
+  #     - ./config.yaml:/opt/stopover/config.yaml:ro
+  #     - ./data/:/opt/stopover/data/:rw
+  #   ports:
+  #     - 5704:5704
+  #   logging: *default-logging
+  #   restart: always
+  #   networks:
+  #     - stopover
+
+  pypow:
+    container_name: pypow
+    image: brunneis/pypow
+    environment:
+      - MINER_NAME=brunneis
+    command: pypow --endpoint https://stopover.brunneis.dev/
+    logging: *default-logging
+    networks:
+      - stopover
