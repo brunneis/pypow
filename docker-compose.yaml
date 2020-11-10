@@ -1,4 +1,3 @@
-
 version: "3.5"
 
 x-logging: &default-logging
