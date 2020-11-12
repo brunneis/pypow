@@ -56,13 +56,13 @@ class Blockchain(Link):
     ZEROS_HASH = 64 * '0'  # 0x0000000000000000000000000000000000000000000000000000000000000000
     target = 6 * '0' + 58 * 'f'  # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
+    # target = 5 * '0' + 59 * 'f'  # 0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
     def setup(self):
         self.known_blocks = dict()
         self.unprocessed_blocks = list()
         self.winning_block = None
         self.winning_height = -1
-
-        self.process_blocks()
 
         self.launch_thread(self.mine, safe_stop=True)
         self.loop(self.write_output, interval=3)
@@ -79,7 +79,7 @@ class Blockchain(Link):
             block.set_nonce()
             hashes_no += 1
             hashrate = get_rate(hashes_no, start_timestamp)
-            if mining_preview and hashes_no % 5000 == 0:
+            if mining_preview and hashes_no % 5e5 == 0:
                 self.logger.log(f'{int(hashrate / 1000)} Kilohashes / second')
         return block
 
@@ -92,8 +92,6 @@ class Blockchain(Link):
             elif block.prev_hash == Blockchain.ZEROS_HASH:
                 block.height = 0
                 processed_block_indexes.append(index)
-            else:
-                continue
 
         processed_block_indexes = reversed(sorted(processed_block_indexes))
         for index in processed_block_indexes:
@@ -144,7 +142,7 @@ class Blockchain(Link):
         while not should_stop():
             prev_hash = self.get_prev_hash()
 
-            block = self.find_block(prev_hash, get_current_iss_location())
+            block = self.find_block(prev_hash, data='')
             if not block:
                 return
 
