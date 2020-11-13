@@ -162,4 +162,6 @@ class Blockchain(Link):
         return prev_hash
 
 
-Blockchain(uid_consumer_group=True).start()
+link = Blockchain(uid_consumer_group=True)
+link.config['rpc_topics'] = ['catenae_rpc_broadcast']
+link.start()
