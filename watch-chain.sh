@@ -1,2 +1,7 @@
 #!/bin/bash
-docker exec -t pypow watch cat winning_chain.txt
+while true; do
+  docker cp pypow:/opt/catenae/winning_chain.txt .
+  clear
+  head -24 winning_chain.txt
+  sleep 1
+done
