@@ -122,11 +122,12 @@ class Blockchain(Link):
         with open('winning_chain.txt', 'w') as output_file:
             while block.prev_hash != Blockchain.ZEROS_HASH or block.prev_hash == Blockchain.ZEROS_HASH:
                 output_file.write(83 * '-' + '\n')
-                output_file.write(f'| hash:       | {block.hash}\n')
                 output_file.write(f'| height:     | {block.height}\n')
+                output_file.write(f'| hash:       | {block.hash}\n')
+                output_file.write(f'| prev_hash:  | {block.prev_hash}\n')
                 output_file.write(f'| timestamp:  | {block.timestamp} ({ctime(block.timestamp)})\n')
                 output_file.write(f'| author:     | {block.author}\n')
-                output_file.write(f'| prev_hash:  | {block.prev_hash}\n')
+                output_file.write(f'| nonce:      | {block.nonce}\n')
                 output_file.write(f'| data:       | {block.data}\n')
                 output_file.write(83 * '-' + '\n')
 
